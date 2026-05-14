@@ -9,7 +9,7 @@ A full-stack movie recommendation engine powered by the TMDB 5000 Movies dataset
 
 ## Live Demo
 
-**[→ Try it on GitHub Pages](https://modabbir-hossen.github.io/movie-recommender)**
+**[→ Try it on GitHub Pages](https://modabbir-hossen.github.io/Movie-recommender/)**
 
 ---
 
