@@ -1,0 +1,592 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>CardioAI — Heart Disease Prediction</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link href="https://fonts.googleapis.com/css2?family=Space+Mono:wght@400;700&family=DM+Sans:wght@300;400;500;600&display=swap" rel="stylesheet">
+  <style>
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+    :root {
+      --bg:        #050d1a;
+      --surface:   #0d1f35;
+      --surface2:  #112340;
+      --border:    #1e3a5f;
+      --accent:    #00d4ff;
+      --accent2:   #ff4d6d;
+      --success:   #10b981;
+      --warning:   #f59e0b;
+      --danger:    #ef4444;
+      --text:      #e2eaf4;
+      --muted:     #7a9cc0;
+      --mono:      'Space Mono', monospace;
+      --sans:      'DM Sans', sans-serif;
+    }
+
+    body {
+      background: var(--bg);
+      color: var(--text);
+      font-family: var(--sans);
+      min-height: 100vh;
+      overflow-x: hidden;
+    }
+
+    /* ── Grid bg ─────────────────────────────────── */
+    body::before {
+      content: '';
+      position: fixed; inset: 0;
+      background-image:
+        linear-gradient(rgba(0,212,255,.04) 1px, transparent 1px),
+        linear-gradient(90deg, rgba(0,212,255,.04) 1px, transparent 1px);
+      background-size: 40px 40px;
+      pointer-events: none;
+      z-index: 0;
+    }
+
+    /* ── Header ──────────────────────────────────── */
+    header {
+      position: relative; z-index: 10;
+      display: flex; align-items: center; justify-content: space-between;
+      padding: 18px 40px;
+      border-bottom: 1px solid var(--border);
+      background: rgba(5,13,26,.85);
+      backdrop-filter: blur(12px);
+    }
+    .logo { display: flex; align-items: center; gap: 12px; }
+    .logo-icon {
+      width: 36px; height: 36px;
+      background: var(--accent);
+      border-radius: 8px;
+      display: grid; place-items: center;
+      font-size: 18px;
+    }
+    .logo-text { font-family: var(--mono); font-size: 1.1rem; color: var(--accent); }
+    .logo-sub  { font-size: .72rem; color: var(--muted); letter-spacing: .05em; }
+    .badge {
+      font-family: var(--mono); font-size: .7rem;
+      background: rgba(0,212,255,.1); border: 1px solid rgba(0,212,255,.3);
+      color: var(--accent); padding: 4px 12px; border-radius: 20px;
+    }
+
+    /* ── Hero ────────────────────────────────────── */
+    .hero {
+      position: relative; z-index: 1;
+      text-align: center; padding: 56px 24px 40px;
+    }
+    .hero h1 {
+      font-family: var(--mono);
+      font-size: clamp(1.8rem, 4vw, 2.8rem);
+      line-height: 1.2;
+      background: linear-gradient(135deg, #e2eaf4 30%, #00d4ff 100%);
+      -webkit-background-clip: text; -webkit-text-fill-color: transparent;
+    }
+    .hero p { margin-top: 12px; color: var(--muted); font-size: 1rem; }
+
+    /* ── Stat cards ──────────────────────────────── */
+    .stats {
+      position: relative; z-index: 1;
+      display: flex; flex-wrap: wrap; gap: 16px;
+      justify-content: center; padding: 0 24px 48px;
+    }
+    .stat-card {
+      background: var(--surface); border: 1px solid var(--border);
+      border-radius: 14px; padding: 20px 32px; text-align: center;
+      min-width: 160px;
+      transition: border-color .25s, transform .25s;
+    }
+    .stat-card:hover { border-color: var(--accent); transform: translateY(-3px); }
+    .stat-value { font-family: var(--mono); font-size: 1.8rem; color: var(--accent); }
+    .stat-label { font-size: .75rem; color: var(--muted); margin-top: 4px; letter-spacing: .05em; }
+
+    /* ── Main layout ─────────────────────────────── */
+    main {
+      position: relative; z-index: 1;
+      max-width: 1280px; margin: 0 auto; padding: 0 24px 80px;
+      display: grid; gap: 32px;
+    }
+    .grid-2 { display: grid; grid-template-columns: 1fr 1fr; gap: 24px; }
+    .grid-4 { display: grid; grid-template-columns: repeat(4,1fr); gap: 16px; }
+
+    @media (max-width: 900px) {
+      .grid-2 { grid-template-columns: 1fr; }
+      .grid-4 { grid-template-columns: 1fr 1fr; }
+    }
+    @media (max-width: 540px) {
+      .grid-4 { grid-template-columns: 1fr; }
+      header  { padding: 14px 20px; }
+    }
+
+    /* ── Panel ───────────────────────────────────── */
+    .panel {
+      background: var(--surface); border: 1px solid var(--border);
+      border-radius: 16px; overflow: hidden;
+    }
+    .panel-head {
+      display: flex; align-items: center; gap: 10px;
+      padding: 16px 24px; border-bottom: 1px solid var(--border);
+      font-family: var(--mono); font-size: .85rem; color: var(--accent);
+    }
+    .panel-head .dot {
+      width: 8px; height: 8px; border-radius: 50%; background: var(--accent);
+      box-shadow: 0 0 8px var(--accent);
+    }
+    .panel-body { padding: 24px; }
+
+    /* ── Form ────────────────────────────────────── */
+    .form-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; }
+    @media (max-width: 600px) { .form-grid { grid-template-columns: 1fr; } }
+
+    .field { display: flex; flex-direction: column; gap: 6px; }
+    .field label {
+      font-size: .72rem; font-weight: 600; letter-spacing: .07em;
+      color: var(--muted); text-transform: uppercase;
+    }
+    .field input, .field select {
+      background: var(--surface2); border: 1px solid var(--border);
+      border-radius: 8px; padding: 10px 14px;
+      color: var(--text); font-family: var(--mono); font-size: .85rem;
+      outline: none; transition: border-color .2s;
+      appearance: none;
+    }
+    .field input:focus, .field select:focus { border-color: var(--accent); }
+
+    .btn-predict {
+      margin-top: 24px; width: 100%; padding: 14px;
+      background: var(--accent); color: #050d1a;
+      border: none; border-radius: 10px; cursor: pointer;
+      font-family: var(--mono); font-size: .95rem; font-weight: 700;
+      letter-spacing: .05em; transition: opacity .2s, transform .15s;
+    }
+    .btn-predict:hover  { opacity: .88; transform: translateY(-1px); }
+    .btn-predict:active { transform: translateY(0); }
+
+    /* ── Result box ──────────────────────────────── */
+    #result-box {
+      display: none; margin-top: 20px;
+      border-radius: 12px; padding: 20px 24px;
+      border: 1px solid var(--border);
+      animation: fadeIn .35s ease;
+    }
+    #result-box.positive {
+      background: rgba(239,68,68,.08); border-color: rgba(239,68,68,.4);
+    }
+    #result-box.negative {
+      background: rgba(16,185,129,.08); border-color: rgba(16,185,129,.4);
+    }
+    .result-label {
+      font-family: var(--mono); font-size: 1.1rem; font-weight: 700; margin-bottom: 8px;
+    }
+    .result-meta { font-size: .82rem; color: var(--muted); }
+
+    .risk-bar-wrap { margin-top: 14px; }
+    .risk-bar-track {
+      height: 8px; background: var(--surface2); border-radius: 4px;
+      overflow: hidden; margin-top: 6px;
+    }
+    .risk-bar-fill {
+      height: 100%; border-radius: 4px;
+      transition: width 1s cubic-bezier(.4,0,.2,1);
+    }
+
+    /* ── Plots ───────────────────────────────────── */
+    .plot-img {
+      width: 100%; border-radius: 10px;
+      border: 1px solid var(--border);
+    }
+
+    /* ── Model card ──────────────────────────────── */
+    .cv-row {
+      display: flex; align-items: center; justify-content: space-between;
+      padding: 10px 0; border-bottom: 1px solid var(--border);
+      font-size: .85rem;
+    }
+    .cv-row:last-child { border-bottom: none; }
+    .cv-name { color: var(--text); }
+    .cv-bar-wrap { flex: 1; margin: 0 16px; }
+    .cv-bar-track { height: 5px; background: var(--surface2); border-radius: 3px; }
+    .cv-bar-fill  { height: 100%; border-radius: 3px; background: var(--accent); transition: width 1s; }
+    .cv-score { font-family: var(--mono); font-size: .8rem; color: var(--muted); white-space: nowrap; }
+
+    /* ── Spinner ─────────────────────────────────── */
+    .spinner {
+      display: none; width: 20px; height: 20px;
+      border: 2px solid rgba(0,212,255,.3); border-top-color: var(--accent);
+      border-radius: 50%; animation: spin .7s linear infinite; margin: auto;
+    }
+
+    @keyframes spin   { to { transform: rotate(360deg); } }
+    @keyframes fadeIn { from { opacity: 0; transform: translateY(8px); } }
+
+    /* ── Footer ──────────────────────────────────── */
+    footer {
+      position: relative; z-index: 1;
+      text-align: center; padding: 24px;
+      border-top: 1px solid var(--border);
+      font-size: .78rem; color: var(--muted); font-family: var(--mono);
+    }
+    footer a { color: var(--accent); text-decoration: none; }
+
+    .tag {
+      display: inline-block; font-size: .68rem; font-family: var(--mono);
+      background: rgba(0,212,255,.08); border: 1px solid rgba(0,212,255,.2);
+      color: var(--accent); padding: 2px 8px; border-radius: 4px; margin-right: 4px;
+    }
+  </style>
+</head>
+<body>
+
+<!-- ── Header ──────────────────────────────────────────── -->
+<header>
+  <div class="logo">
+    <div class="logo-icon">🫀</div>
+    <div>
+      <div class="logo-text">CardioAI</div>
+      <div class="logo-sub">Heart Disease Prediction System</div>
+    </div>
+  </div>
+  <span class="badge">ML v1.0 · ECG Analysis</span>
+</header>
+
+<!-- ── Hero ────────────────────────────────────────────── -->
+<div class="hero">
+  <h1>ECG-Based Heart Disease<br>Risk Classification</h1>
+  <p>End-to-end ML pipeline · 5 classifiers · Clinical decision support</p>
+  <div style="margin-top:14px">
+    <span class="tag">scikit-learn</span>
+    <span class="tag">Python</span>
+    <span class="tag">Random Forest</span>
+    <span class="tag">SVM</span>
+    <span class="tag">Logistic Regression</span>
+  </div>
+</div>
+
+<!-- ── Stat Cards ───────────────────────────────────────── -->
+{% if model_loaded %}
+<div class="stats">
+  <div class="stat-card">
+    <div class="stat-value">{{ "%.0f"|format(metrics.accuracy * 100) }}%</div>
+    <div class="stat-label">Accuracy</div>
+  </div>
+  <div class="stat-card">
+    <div class="stat-value">{{ "%.2f"|format(metrics.f1) }}</div>
+    <div class="stat-label">F1-Score</div>
+  </div>
+  <div class="stat-card">
+    <div class="stat-value">{{ "%.3f"|format(metrics.roc_auc) }}</div>
+    <div class="stat-label">ROC-AUC</div>
+  </div>
+  <div class="stat-card">
+    <div class="stat-value">5</div>
+    <div class="stat-label">Classifiers</div>
+  </div>
+  <div class="stat-card">
+    <div class="stat-value" style="font-size:1rem;padding:4px 0">{{ metrics.best_model }}</div>
+    <div class="stat-label">Best Model</div>
+  </div>
+</div>
+{% endif %}
+
+<!-- ── Main ─────────────────────────────────────────────── -->
+<main>
+
+  <!-- ── Prediction Form ─────────────────────────── -->
+  <div class="grid-2">
+    <div class="panel">
+      <div class="panel-head"><div class="dot"></div> Patient ECG Parameters</div>
+      <div class="panel-body">
+        {% if not model_loaded %}
+        <p style="color:var(--warning);font-family:var(--mono);font-size:.85rem">
+          ⚠ Model not loaded. Run <code>python train_model.py</code> first.
+        </p>
+        {% else %}
+        <div class="form-grid" id="param-form">
+
+          <!-- Numeric fields -->
+          {% for col in ['age','trestbps','chol','thalach','oldpeak'] %}
+          <div class="field">
+            <label>{{ feature_info[col].label }}</label>
+            <input type="number" id="{{ col }}" name="{{ col }}"
+                   placeholder="e.g. {% if col=='age'%}55{% elif col=='trestbps'%}130{% elif col=='chol'%}240{% elif col=='thalach'%}150{% else %}1.5{% endif %}"
+                   step="{% if col=='oldpeak'%}0.1{% else %}1{% endif %}">
+          </div>
+          {% endfor %}
+
+          <!-- Sex -->
+          <div class="field">
+            <label>Sex</label>
+            <select id="sex">
+              <option value="1">Male</option>
+              <option value="0">Female</option>
+            </select>
+          </div>
+
+          <!-- Chest Pain -->
+          <div class="field">
+            <label>Chest Pain Type</label>
+            <select id="cp">
+              <option value="0">0 – Typical Angina</option>
+              <option value="1">1 – Atypical Angina</option>
+              <option value="2">2 – Non-Anginal Pain</option>
+              <option value="3">3 – Asymptomatic</option>
+            </select>
+          </div>
+
+          <!-- Fasting BS -->
+          <div class="field">
+            <label>Fasting Blood Sugar &gt;120</label>
+            <select id="fbs">
+              <option value="0">No</option>
+              <option value="1">Yes</option>
+            </select>
+          </div>
+
+          <!-- Resting ECG -->
+          <div class="field">
+            <label>Resting ECG</label>
+            <select id="restecg">
+              <option value="0">0 – Normal</option>
+              <option value="1">1 – ST-T Abnormality</option>
+              <option value="2">2 – LV Hypertrophy</option>
+            </select>
+          </div>
+
+          <!-- Exercise Angina -->
+          <div class="field">
+            <label>Exercise Induced Angina</label>
+            <select id="exang">
+              <option value="0">No</option>
+              <option value="1">Yes</option>
+            </select>
+          </div>
+
+          <!-- Slope -->
+          <div class="field">
+            <label>Slope of Peak ST</label>
+            <select id="slope">
+              <option value="0">0 – Upsloping</option>
+              <option value="1">1 – Flat</option>
+              <option value="2">2 – Downsloping</option>
+            </select>
+          </div>
+
+          <!-- CA -->
+          <div class="field">
+            <label>Major Vessels (0-4)</label>
+            <select id="ca">
+              {% for i in range(5) %}<option value="{{ i }}">{{ i }}</option>{% endfor %}
+            </select>
+          </div>
+
+          <!-- Thal -->
+          <div class="field">
+            <label>Thalassemia</label>
+            <select id="thal">
+              <option value="0">0 – Normal</option>
+              <option value="1">1 – Fixed Defect</option>
+              <option value="2">2 – Reversible Defect</option>
+              <option value="3">3 – Other</option>
+            </select>
+          </div>
+
+        </div>
+
+        <button class="btn-predict" onclick="runPrediction()">
+          Analyse Risk →
+        </button>
+
+        <div class="spinner" id="spinner"></div>
+
+        <!-- Result -->
+        <div id="result-box">
+          <div class="result-label" id="result-label"></div>
+          <div class="result-meta" id="result-meta"></div>
+          <div class="risk-bar-wrap">
+            <div style="font-size:.75rem;color:var(--muted)">Risk Probability</div>
+            <div class="risk-bar-track">
+              <div class="risk-bar-fill" id="risk-fill" style="width:0%"></div>
+            </div>
+            <div style="font-size:.8rem;color:var(--muted);margin-top:4px" id="risk-pct"></div>
+          </div>
+        </div>
+        {% endif %}
+      </div>
+    </div>
+
+    <!-- ── CV Results ───────────────────────────── -->
+    <div class="panel">
+      <div class="panel-head"><div class="dot"></div> Cross-Validation Comparison</div>
+      <div class="panel-body">
+        {% if model_loaded %}
+        {% set cv = metrics.cv_results %}
+        {% for name, vals in cv.items() %}
+        <div class="cv-row">
+          <span class="cv-name">{{ name }}</span>
+          <div class="cv-bar-wrap">
+            <div class="cv-bar-track">
+              <div class="cv-bar-fill"
+                   style="width:{{ ((vals.mean - 0.5)/0.5*100)|round|int }}%;
+                          background:{% if loop.first %}#10b981{% elif loop.index==2 %}#3b82f6{% elif loop.index==3 %}#f59e0b{% elif loop.index==4 %}#8b5cf6{% else %}#ef4444{% endif %}">
+              </div>
+            </div>
+          </div>
+          <span class="cv-score">{{ "%.3f"|format(vals.mean) }} ± {{ "%.3f"|format(vals.std) }}</span>
+        </div>
+        {% endfor %}
+
+        {% if plots.cv %}
+        <img src="/static/plots/cv_comparison.png" class="plot-img" style="margin-top:20px" alt="CV plot">
+        {% endif %}
+        {% endif %}
+      </div>
+    </div>
+  </div>
+
+  <!-- ── Evaluation Plots ─────────────────────────── -->
+  {% if model_loaded %}
+  <div class="grid-2">
+
+    {% if plots.cm %}
+    <div class="panel">
+      <div class="panel-head"><div class="dot"></div> Confusion Matrix</div>
+      <div class="panel-body" style="text-align:center">
+        <img src="/static/plots/confusion_matrix.png" class="plot-img" alt="Confusion Matrix">
+        <div style="margin-top:12px">
+          {% set cm = metrics.cm %}
+          <span style="font-family:var(--mono);font-size:.8rem;color:var(--muted)">
+            TP: {{ cm[1][1] }} | TN: {{ cm[0][0] }} | FP: {{ cm[0][1] }} | FN: {{ cm[1][0] }}
+          </span>
+        </div>
+      </div>
+    </div>
+    {% endif %}
+
+    {% if plots.roc %}
+    <div class="panel">
+      <div class="panel-head"><div class="dot"></div> ROC-AUC Curve</div>
+      <div class="panel-body" style="text-align:center">
+        <img src="/static/plots/roc_curve.png" class="plot-img" alt="ROC Curve">
+        <div style="margin-top:12px;font-family:var(--mono);font-size:.8rem;color:var(--muted)">
+          AUC = {{ "%.4f"|format(metrics.roc_auc) }}
+        </div>
+      </div>
+    </div>
+    {% endif %}
+
+  </div>
+
+  {% if plots.feat %}
+  <div class="panel">
+    <div class="panel-head"><div class="dot"></div> Feature Importances (Best Model)</div>
+    <div class="panel-body">
+      <img src="/static/plots/feature_importance.png" class="plot-img" alt="Feature Importances">
+    </div>
+  </div>
+  {% endif %}
+
+  <!-- ── Classification Report ─────────────────── -->
+  <div class="panel">
+    <div class="panel-head"><div class="dot"></div> Classification Report</div>
+    <div class="panel-body">
+      <div class="grid-4">
+        {% for cls, vals in metrics.report.items() %}
+          {% if cls not in ['accuracy','macro avg','weighted avg'] %}
+          <div class="stat-card" style="min-width:auto">
+            <div style="font-family:var(--mono);font-size:.7rem;color:var(--muted);margin-bottom:8px">
+              Class {{ cls }}
+            </div>
+            <div style="font-size:.82rem;display:flex;flex-direction:column;gap:4px">
+              <div>Precision <strong style="color:var(--accent)">{{ "%.2f"|format(vals.precision) }}</strong></div>
+              <div>Recall    <strong style="color:var(--accent)">{{ "%.2f"|format(vals.recall) }}</strong></div>
+              <div>F1        <strong style="color:var(--accent)">{{ "%.2f"|format(vals['f1-score']) }}</strong></div>
+              <div>Support   <strong style="color:var(--accent)">{{ vals.support }}</strong></div>
+            </div>
+          </div>
+          {% endif %}
+        {% endfor %}
+        <div class="stat-card" style="min-width:auto">
+          <div style="font-family:var(--mono);font-size:.7rem;color:var(--muted);margin-bottom:8px">
+            Weighted Avg
+          </div>
+          <div style="font-size:.82rem;display:flex;flex-direction:column;gap:4px">
+            {% set wa = metrics.report['weighted avg'] %}
+            <div>Precision <strong style="color:var(--accent)">{{ "%.2f"|format(wa.precision) }}</strong></div>
+            <div>Recall    <strong style="color:var(--accent)">{{ "%.2f"|format(wa.recall) }}</strong></div>
+            <div>F1        <strong style="color:var(--accent)">{{ "%.2f"|format(wa['f1-score']) }}</strong></div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+  {% endif %}
+
+</main>
+
+<!-- ── Footer ───────────────────────────────────────────── -->
+<footer>
+  <p>CardioAI · Heart Disease Prediction System · Jan–Feb 2026</p>
+  <p style="margin-top:6px">
+    Built with Python · scikit-learn · Flask ·
+    <a href="https://github.com/Modabbir-Hossen/heart-disease-prediction" target="_blank">GitHub ↗</a>
+  </p>
+</footer>
+
+<script>
+  const COLS = ['age','sex','cp','trestbps','chol','fbs','restecg',
+                'thalach','exang','oldpeak','slope','ca','thal'];
+
+  async function runPrediction() {
+    const spinner   = document.getElementById('spinner');
+    const resultBox = document.getElementById('result-box');
+    resultBox.style.display = 'none';
+    spinner.style.display = 'block';
+
+    const payload = {};
+    for (const col of COLS) {
+      const el = document.getElementById(col);
+      if (!el || el.value === '') {
+        alert(`Please fill in: ${col}`);
+        spinner.style.display = 'none'; return;
+      }
+      payload[col] = parseFloat(el.value);
+    }
+
+    try {
+      const res  = await fetch('/predict', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(payload)
+      });
+      const data = await res.json();
+
+      spinner.style.display = 'none';
+
+      if (data.error) { alert('Error: ' + data.error); return; }
+
+      const box   = document.getElementById('result-box');
+      const label = document.getElementById('result-label');
+      const meta  = document.getElementById('result-meta');
+      const fill  = document.getElementById('risk-fill');
+      const pct   = document.getElementById('risk-pct');
+
+      box.className = data.prediction === 1 ? 'positive' : 'negative';
+      label.style.color = data.prediction === 1 ? '#ef4444' : '#10b981';
+      label.textContent = (data.prediction === 1 ? '⚠ ' : '✓ ') + data.label;
+      meta.textContent  = `Risk Level: ${data.risk_level}  ·  Model: ${data.model_used}`;
+
+      fill.style.background = data.probability > 65 ? '#ef4444'
+                            : data.probability > 35 ? '#f59e0b' : '#10b981';
+
+      box.style.display = 'block';
+      setTimeout(() => { fill.style.width = data.probability + '%'; }, 50);
+      pct.textContent = `${data.probability}% probability of heart disease`;
+
+    } catch (err) {
+      spinner.style.display = 'none';
+      alert('Request failed: ' + err.message);
+    }
+  }
+</script>
+</body>
+</html>
