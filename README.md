@@ -1,4 +1,4 @@
-# 🎬 CineMatch — Movie Recommendation System
+# CineMatch — Movie Recommendation System
 
 > **Content-Based Filtering · Cosine Similarity · SVD Collaborative**  
 > Built by [Modabbir Hossen](https://github.com/Modabbir-Hossen) · Mar 2026 – Apr 2026
@@ -7,13 +7,13 @@ A full-stack movie recommendation engine powered by the TMDB 5000 Movies dataset
 
 ---
 
-## 🔍 Live Demo
+## Live Demo
 
 **[→ Try it on GitHub Pages](https://modabbir-hossen.github.io/movie-recommender)**
 
 ---
 
-## ✨ Features
+## Features
 
 - **Content-Based Filtering** — CountVectorizer + cosine similarity on genre, cast, crew, and keywords
 - **Collaborative Filtering** — Surprise library SVD on user rating patterns  
@@ -62,7 +62,7 @@ movie-recommender/
 
 ---
 
-## 🚀 Quick Start
+## Quick Start
 
 ### Frontend Only (GitHub Pages)
 The `index.html` runs entirely in the browser — just open it or push to GitHub Pages.
@@ -89,7 +89,7 @@ python backend/app.py
 
 ---
 
-## 🧠 How It Works
+## How It Works
 
 ### Content-Based Pipeline
 
@@ -124,7 +124,7 @@ final_score = 0.55 × content_similarity + 0.45 × svd_score
 
 ---
 
-## 📊 Key Results
+## Key Results
 
 | Metric | Value |
 |--------|-------|
@@ -136,7 +136,7 @@ final_score = 0.55 × content_similarity + 0.45 × svd_score
 
 ---
 
-## 📁 Dataset
+## Dataset
 
 This project uses the **[TMDB 5000 Movie Dataset](https://www.kaggle.com/datasets/tmdb/tmdb-movie-metadata)** from Kaggle:
 - `tmdb_5000_movies.csv` — Movie metadata, genres, keywords, overview
@@ -146,7 +146,7 @@ Download and place both files in the `/data/` directory.
 
 ---
 
-## 🔮 Future Improvements
+## Future Improvements
 
 - [ ] Deep learning embeddings (BERT / Sentence Transformers)
 - [ ] Real-time TMDB API integration for live poster images
@@ -156,13 +156,13 @@ Download and place both files in the `/data/` directory.
 
 ---
 
-## 👤 Author
+## Author
 
 **Modabbir Hossen**  
 [github.com/Modabbir-Hossen](https://github.com/Modabbir-Hossen)
 
 ---
 
-## 📄 License
+## License
 
 MIT License — free to use, modify, and distribute.
